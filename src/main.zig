@@ -24,7 +24,7 @@ pub fn main() !void {
 
 fn enter_file(_: []const []const u8) !void {
     var f = file.value.string.?;
-    std.log.debug("Path to file: {s}", .{f});
+    std.log.info("Path to file: {s}", .{f});
 
     var file_f = try std.fs.cwd().openFile(f, .{});
     defer file_f.close();
@@ -33,12 +33,25 @@ fn enter_file(_: []const []const u8) !void {
     var in_stream = buf_reader.reader();
 
     var buf: [1024]u8 = undefined;
+    var line_count: u16 = 0;
+    var error_count: u16 = 0;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        line_count = line_count + 1;
         std.log.debug("{s}", .{line});
+        var char_count: u16 = 0;
         for (range(line.len - 1)) |_, i| {
+            char_count = char_count + 1;
             var char = line[i];
-            std.log.debug("Char: {} contains: {}", .{ char, contains(char) });
+            if (!contains(char)) {
+                error_count = error_count + 1;
+                std.log.err("Invalid character '{any}' at {}:{}", .{ char, line_count, char_count });
+            }
         }
+    }
+    if (error_count > 0) {
+        std.log.err("Parsing faild due to {} previous error(s).", .{error_count});
+    } else {
+        std.log.info("Parsing successfull", .{});
     }
 }
 
